@@ -1,4 +1,5 @@
 import React from "react";
+import "./App.css";
 import TodoList from "./components/TodoComponents/TodoList";
 import TodoForm from "./components/TodoComponents/TodoForm";
 import Search from "./components/TodoComponents/Search";
@@ -31,6 +32,12 @@ class App extends React.Component {
   handleAddTodo = async event => {
     event.preventDefault();
     const { task } = this.state;
+
+    if (this.state.task === "") {
+      alert("You need to enter a new task");
+      return;
+    }
+
     const newTask = {
       task,
       id: Date.now(),
@@ -40,6 +47,33 @@ class App extends React.Component {
       todoData: [...prevState.todoData, newTask],
       todoDisplayData: [...prevState.todoDisplayData, newTask],
       task: ""
+    }));
+    await localStorage.setItem("todoData", JSON.stringify(this.state.todoData));
+  };
+
+  toggleTask = async id => {
+    const updatedTodoData = this.state.todoData.map(task => {
+      if (task.id === id) {
+        return { ...task, completed: !task.completed };
+      }
+      return task;
+    });
+
+    await this.setState({
+      ...this.state,
+      todoData: updatedTodoData,
+      todoDisplayData: updatedTodoData
+    });
+    await localStorage.setItem("todoData", JSON.stringify(this.state.todoData));
+  };
+
+  clearCompleted = async () => {
+    const unCompletedTasks = this.state.todoData.filter(
+      task => !task.completed
+    );
+    await this.setState(prevState => ({
+      todoData: unCompletedTasks,
+      todoDisplayData: unCompletedTasks
     }));
     await localStorage.setItem("todoData", JSON.stringify(this.state.todoData));
   };
@@ -64,21 +98,24 @@ class App extends React.Component {
     const displayTasksCount = todoDisplayData.length;
     const todoTasksCount = todoData.length;
     return (
-      <div>
+      <div className="app">
         <h2>Welcome to My Todo App!</h2>
 
         <Search query={query} handleSearchInput={this.handleSearchInput} />
 
+        <TodoList
+          todoData={todoDisplayData}
+          handleToggleTask={this.toggleTask}
+        />
         {todoTasksCount === 0 && <p>You have not yet added any tasks</p>}
         {displayTasksCount === 0 && query.length > 0 && (
           <p>No matching tasks were found</p>
         )}
-
-        <TodoList todoData={todoDisplayData} />
         <TodoForm
           task={task}
           handleTaskChange={this.handleTaskChange}
           addTodo={this.handleAddTodo}
+          clearCompleted={this.clearCompleted}
         />
       </div>
     );
